@@ -20,6 +20,28 @@ use std::time::{Duration, Instant};
             $name.max_threads * $name.max_runcount,
         )
     };
+
+    (define $name:ident; $code:block, $threads:expr, $run:expr) => {
+        struct $name {}
+
+        impl Bench for $name {
+            fn generate() -> Self {
+                $name {}
+            }
+
+            fn test(&mut self) {
+                $code
+            }
+        }
+        #[allow(non_snake_case)]
+        let mut $name = BenchMarker::<$name>::new($threads, $run);
+        $name.start();
+        println!(
+            "{:?} / {}",
+            $name.average(),
+            $name.max_threads * $name.max_runcount,
+        )
+    };
 }
 
 
