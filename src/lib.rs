@@ -3,7 +3,7 @@
 use std::marker::PhantomData;
 use std::thread;
 use std::time::{Duration, Instant};
-
+use std::hint::black_box;
 //use rand::prelude::*;
 
 #[macro_export] macro_rules! quickbench {
@@ -72,12 +72,12 @@ impl<T:Bench> BenchMarker<T> {
             let mut scope_table = vec![];   
             
             for _ in 0..self.max_threads {
-                scope_table.push(s.spawn(|| {
+                scope_table.push(s.spawn(|| {black_box({
                     let mut item = <T as Bench>::generate();
                     let time = Instant::now();
                     item.test();
                     time.elapsed()
-                }));
+                })}));
             }
 
             for _ in 0..self.max_threads {
