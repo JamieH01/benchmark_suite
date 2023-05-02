@@ -18,12 +18,12 @@ mod integration_tests {
         }
         
 
-        quickbench!(bench, Table, 8, 10);
+        quickbench!(bench, Table, 8, 50);
         
 
-        quickbench!(define TestSruct; {
-            let _dummy =vec![15; 10_000_000];
-        }, 8, 10);
+        //quickbench!(define TestSruct; {
+        //    let _dummy = vec![15; 10_000_000];
+        //}, 8, 10);
 
     }
     #[test]
@@ -34,7 +34,7 @@ mod integration_tests {
         struct Sorter {
             table:Vec<u32>
         }
-
+        
         impl Bench for Sorter {
 
             fn generate() -> Self {
@@ -68,11 +68,9 @@ mod integration_tests {
     
         let mut bencher = quickbench!(Sorter, 8, 100);
         bencher.start();
-        println!(
-            "{:?} / {}",
-            bencher.average(),
-            bencher.max_threads * bencher.max_runcount,
-        )
+
+        bencher.stats(DisplayType::Detailed);
+        bencher.stats(DisplayType::Graph);
 
     }
 }
