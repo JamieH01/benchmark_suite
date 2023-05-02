@@ -17,7 +17,7 @@ use owo_colors::OwoColorize;
     ($name:ident, $struct:ty, $threads:expr, $run:expr) => {
         let mut $name = BenchMarker::<$struct>::new($threads, $run);
         $name.start();
-        $name.stats(DisplayType::Simple);
+        println!("{}", $name);
     };
 
     (define $name:ident; $code:block, $threads:expr, $run:expr) => {
@@ -39,7 +39,11 @@ use owo_colors::OwoColorize;
     };
 }
 
-
+type DC = DisplayCfg;
+pub const DEFAULT:[DisplayCfg; 9] = 
+[DC::SysInfo, DC::Space, 
+DC::Mean, DC::Median, DC::Deviation, DC::Space,
+DC::AbsMin, DC::AbsMax, DC::AbsDiff]; 
 
 pub struct BenchMarker<T:Bench> {
     phantom:PhantomData<T>,
@@ -48,6 +52,7 @@ pub struct BenchMarker<T:Bench> {
     pub max_threads: usize,
     pub max_runcount: usize,
     runtime:Duration,
+    pub display_config:Vec<DisplayCfg>
 }
 
 impl<T:Bench> BenchMarker<T> {
@@ -59,6 +64,7 @@ impl<T:Bench> BenchMarker<T> {
             max_threads,
             max_runcount,
             runtime:Duration::ZERO,
+            display_config:DEFAULT.to_vec()
         }
     }
 
@@ -100,9 +106,14 @@ impl<T:Bench> BenchMarker<T> {
         }
     }
 
-    pub fn stats(&self, display:DisplayType) {
-        let name = type_name::<T>().split("::").last().unwrap_or("[parse_err]");
 
+
+}
+
+
+impl<T:Bench> std::fmt::Display for BenchMarker<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = type_name::<T>().split("::").last().unwrap_or("[parse_err]");
         //mean
         let mut sum = Duration::ZERO;
         self.time_table.iter().for_each(|i| sum += *i);
@@ -130,52 +141,51 @@ impl<T:Bench> BenchMarker<T> {
         let q_max = q3-(iqr + (iqr/2));
         let range = last - first;
 
-        match display {
-            DisplayType::Simple => {
-                println!("Benchmark Results for {}", name.green());
-                println!("{}", format!("    threads used: {:?}", self.max_threads).cyan());
-                println!("{}", format!("    total tests ran: {:?}", self.max_threads * self.max_runcount).cyan());
-                println!("{}", format!("    total runtime: {:?}\n", self.runtime).cyan());
-                println!("    mean: {:?}", mean.yellow());
-                println!("    median: {:?}", median);
-                println!("    deviation: {:?}\n", deviation.magenta());
-                println!("    min: {:?}", first);
-                println!("    max: {:?}", last);
-                println!("    diff: {:?}\n", range.magenta())
-            },
-            DisplayType::Detailed => {
-                println!("Benchmark Results for {}", name.green());
-                println!("{}", format!("    threads used: {:?}", self.max_threads).cyan());
-                println!("{}", format!("    total tests ran: {:?}", self.max_threads * self.max_runcount).cyan());
-                println!("{}", format!("    total runtime: {:?}\n", self.runtime).cyan());
-                println!("    mean: {:?}\n", mean.yellow());
-                println!("    Q1: {:?}", q1);
-                println!("    Q2(median): {:?}", median);
-                println!("    Q3: {:?}\n", q3);
-                println!("    deviation: {:?}\n", deviation.magenta());
-                println!("    absolute min: {:?}", first);
-                println!("    quartile min: {:?}", q_min.yellow());
-                println!("    quartile max: {:?}", q_max.yellow());
-                println!("    absolute max: {:?}", last);
-                println!("    diff: {:?}\n", range.magenta())
-            },
-            DisplayType::Graph => println!("*|--████----|   *"),
-        }
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        writeln!(f, "Benchmark Results for {}", name.green())?;
 
+        for item in self.display_config.iter() {
+            match item {
+                DisplayCfg::SysInfo => {
+                writeln!(f, "{}", format!("    threads used: {:?}", self.max_threads).cyan())?;
+                writeln!(f, "{}", format!("    total tests ran: {:?}", self.max_threads * self.max_runcount).cyan())?;
+                writeln!(f, "{}", format!("    total runtime: {:?}\n", self.runtime).cyan())?;
+                },
+                DisplayCfg::Mean => {
+                    writeln!(f, "    mean: {:?}", mean.yellow())?;
+                },
+                DisplayCfg::Median => {
+                    writeln!(f, "    median: {:?}", median)?;
+                },
+                DisplayCfg::Quartiles => {
+                    writeln!(f, "    Q1: {:?}", q1)?;
+                    writeln!(f, "    Q2: {:?}", median)?;
+                    writeln!(f, "    Q3: {:?}", q3)?;
+                },
+                DisplayCfg::Deviation => {
+                    writeln!(f, "    deviation: {:?}\n", deviation.magenta())?;
+                },
+                DisplayCfg::AbsMin => {
+                    writeln!(f, "    min: {:?}", first)?;
+                },
+                DisplayCfg::QuartileMin => {
+                    writeln!(f, "    quartile min: {:?}", q_min)?;
+                },
+                DisplayCfg::AbsMax => {
+                    writeln!(f, "    max: {:?}", last)?;
+                },
+                DisplayCfg::QuartileMax => {
+                    writeln!(f, "    quartile max: {:?}", q_max)?;
+                },
+                DisplayCfg::AbsDiff => {
+                    writeln!(f, "    diff: {:?}", range.magenta())?;
+                },
+                DisplayCfg::Space => {
+                    writeln!(f)?;
+                },
+            }
+        }
+
+        writeln!(f)
 
         //color code
         //white-direct element of data
@@ -184,18 +194,25 @@ impl<T:Bench> BenchMarker<T> {
         //yellow-information derived from data meant to represent a sample, not inside the data itself
         //magenta-information derived from data meant to give insight on the structure and distribution of data
     }
-
 }
 
 
 
-
-
-pub enum DisplayType {
-    Simple,
-    Detailed,
-    Graph
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DisplayCfg {
+    SysInfo,
+    Mean,
+    Median,
+    Quartiles,
+    Deviation,
+    AbsMin,
+    QuartileMin,
+    AbsMax,
+    QuartileMax,
+    AbsDiff,
+    Space
 }
+
 
 
 pub trait Bench {

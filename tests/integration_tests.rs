@@ -69,8 +69,7 @@ mod integration_tests {
         let mut bencher = quickbench!(Sorter, 8, 100);
         bencher.start();
 
-        bencher.stats(DisplayType::Detailed);
-        bencher.stats(DisplayType::Graph);
+        println!("{bencher}")
 
     }
 }
