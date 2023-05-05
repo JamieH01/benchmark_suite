@@ -23,7 +23,7 @@ impl Bench for Sorter {
         let mut swapped = true;
 
         while swapped {
-        swapped = false;
+            swapped = false;
 
             for i in 0..self.table.len()-1 {
                 let a = self.table[i];
