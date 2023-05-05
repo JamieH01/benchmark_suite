@@ -5,71 +5,69 @@ mod integration_tests {
 
     #[test]
     fn it_works() {
-        struct Table {}
+        #[derive(Debug)]
+        struct Table {table:Vec<i32>}
 
         impl Bench for Table {
             fn generate() -> Self {
-                Table {}
+                Table {table:vec![]}
             }
     
             fn test(&mut self) {
-                let _dummy =vec![15; 10_000_000];
+                self.table = vec![15; 10_000_000];
             }
         }
         
 
-        quickbench!(bench, Table, 8, 50);
+        quickbench!(bench, Table, 8, 10);
+        
         
 
-        //quickbench!(define TestSruct; {
-        //    let _dummy = vec![15; 10_000_000];
-        //}, 8, 10);
 
     }
-    #[test]
-    fn sorter_test() {
-        use rand::prelude::*;
-        use benchmark_suite::*;
 
-        struct Sorter {
-            table:Vec<u32>
+
+
+#[test]
+fn sorter_test() {
+    const SIZE:u32 = 1000;
+
+    use rand::prelude::*;
+    use benchmark_suite::*;
+    #[derive(Debug)]
+    struct Comb {
+        table:Vec<u32>
+    }
+
+    impl Bench for Comb {
+        fn generate() -> Self {
+            let mut rng = rand::thread_rng();
+            let mut table:Vec<u32> = (1..SIZE).collect();
+            table.shuffle(&mut rng);
+            Comb {table}
         }
-        
-        impl Bench for Sorter {
-
-            fn generate() -> Self {
-                let mut rng = rand::thread_rng();
-
-                let mut table:Vec<u32> = (1..100).collect();
-                table.shuffle(&mut rng);
-                Sorter {table}
-            }
-            fn test(&mut self) {
-                let mut swapped = true;
-
-                while swapped {
-                swapped = false;
-
-                    for i in 0..self.table.len()-1 {
-                        let a = self.table[i];
-                        let b = self.table[i+1];
-
-                        if a > b {
-                            swapped = true;
-                            self.table[i] = b;
-                            self.table[i+1] = a;
-                        }
+        fn test(&mut self) {
+            let mut swapped = true;
+            while swapped {
+            swapped = false;
+                for i in 0..self.table.len()-1 {
+                    let a = self.table[i];
+                    let b = self.table[i+1];
+                    if a > b {
+                        swapped = true;
+                        self.table[i] = b;
+                        self.table[i+1] = a;
                     }
-                
                 }
+            
             }
-
         }
-    
-        let mut bencher = quickbench!(Sorter, 8, 100);
-        bencher.start();
+    }
 
-        println!("{bencher}")
+
+
+    quickbench!(comb, Comb, 8, 5);
+    comb.debug()
 
     }
 }

@@ -14,6 +14,7 @@ path = "tests/integration_tests.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+indicatif = "0.17.3"
 num = "0.4.0"
 num-traits = "0.2.15"
 owo-colors = "3.5.0"
